@@ -26,6 +26,7 @@ fn backtrans(
             protein.name.unwrap_or("".to_string())
         )?;
         let mut pos = 0;
+        let mut i = 0;
         for n in prot_sequence.iter() {
             match n {
                 b'-' => {
@@ -36,7 +37,14 @@ fn backtrans(
                     pos += 3;
                 }
             }
+
+            i += 1;
+            if i >= PER_LINE {
+                i = 0;
+                writeln!(out)?;
+            }
         }
+        writeln!(out)?;
     }
     Ok(())
 }
