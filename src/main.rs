@@ -1,12 +1,14 @@
 use clap::app_from_crate;
 use clap::*;
 use color_eyre::eyre::{Result, WrapErr};
-use std::fs::File;
-use std::io::BufWriter;
 use log::*;
 use simplelog::*;
+use std::fs::File;
+use std::io::BufWriter;
 
+mod distance;
 mod fasta;
+mod io;
 mod transformation;
 
 fn main() -> Result<()> {
@@ -52,6 +54,18 @@ fn main() -> Result<()> {
                 )
                 .arg(Arg::new("OUT_FILE").long("to").takes_value(true)),
         )
+        .subcommand(
+            App::new("distance")
+                .about("Compute various distances on FASTA alignments")
+                .arg(
+                    Arg::new("METRIC")
+                        .takes_value(true)
+                        .required(true)
+                        .possible_values(["kimura", "levenshtein"]),
+                )
+                .arg(Arg::new("FASTA_FILE").takes_value(true).required(true))
+                .arg(Arg::new("OUT_FILE").long("to").takes_value(true)),
+        )
         .get_matches();
 
     match main_args.subcommand() {
@@ -80,6 +94,26 @@ fn main() -> Result<()> {
                 args.value_of("DNA_FILE").unwrap(),
                 out,
             )
+        }
+        Some(("distance", args)) => {
+            let stdout = std::io::stdout();
+            let out: BufWriter<Box<dyn std::io::Write>> =
+                if let Some(out_filename) = args.value_of("OUT_FILE") {
+                    BufWriter::with_capacity(30_000_000, Box::new(File::create(out_filename)?))
+                } else {
+                    BufWriter::new(Box::new(stdout.lock()))
+                };
+
+            let distance = match args.value_of("METRIC").unwrap() {
+                "kimura" => distance::Distance::Kimura,
+                "levenshtein" => distance::Distance::Levenshtein,
+                _ => unreachable!(),
+            };
+            let (ids, m) = distance::distance(
+                io::open_fasta(args.value_of("FASTA_FILE").unwrap())?,
+                distance,
+            );
+            io::write_dist_matrix(&m, &ids, out)
         }
         _ => unreachable!(),
     }

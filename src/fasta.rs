@@ -10,7 +10,7 @@ pub struct Fragment {
     pub seq: Option<Vec<u8>>,
 }
 
-pub struct FastaReader<T> {
+pub struct FastaReader<T: Read> {
     buffer_lines: Lines<BufReader<T>>,
     current_header: Option<String>,
     current_start: usize,
