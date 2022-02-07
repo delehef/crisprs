@@ -19,7 +19,7 @@ pub fn write_dist_matrix<'a, T: std::fmt::Display, L: std::fmt::Display>(
     assert!(m.len() == n * n);
 
     // 1. Write the number of elements
-    writeln!(out, "{}", ids.len());
+    writeln!(out, "{}", ids.len())?;
 
     // 2. Write the matrix itself
     for (i, id) in ids.iter().enumerate() {
