@@ -164,7 +164,7 @@ fn levenshtein_x86(s1: &[u8], s2: &[u8]) -> f64 {
 
 pub fn distance<T: Read>(fasta: FastaReader<T>, distance: Distance) -> (Vec<String>, Vec<f64>) {
     let fragments = fasta
-        .map(|f| (f.id.clone(), f.seq.unwrap().clone()))
+        .map(|f| (f.id.clone(), f.seq.unwrap()))
         .collect::<Vec<_>>();
     let n = fragments.len();
     let mut r = vec![0f64; n * n];

@@ -43,17 +43,17 @@ pub fn trans<'a>(
             out,
             ">{} {}",
             fragment.id,
-            fragment.name.unwrap_or("".to_string())
+            fragment.name.unwrap_or_else(|| "".to_string())
         )?;
 
         let mut i = 0;
         for nnn in seq.as_slice().chunks(3) {
-            let nnn = std::str::from_utf8(&nnn).wrap_err(format!("invalid UTF-8: {:?}", nnn))?;
+            let nnn = std::str::from_utf8(nnn).wrap_err(format!("invalid UTF-8: {:?}", nnn))?;
             let aa = PROT_DICT.get(&nnn).unwrap_or_else(|| {
                 warn!("unknown triplet: {}", nnn);
                 &b'X'
             });
-            out.write(&[*aa])?;
+            out.write_all(&[*aa])?;
 
             i += 1;
             if i >= PER_LINE {
@@ -89,7 +89,7 @@ pub fn backtrans<'a>(
             out,
             ">{} {}",
             protein.id,
-            protein.name.unwrap_or("".to_string())
+            protein.name.unwrap_or_else(|| "".to_string())
         )?;
         let mut pos = 0;
         let mut i = 0;
@@ -99,7 +99,7 @@ pub fn backtrans<'a>(
                     write!(out, "---")?;
                 }
                 _ => {
-                    out.write(&dna_sequence[pos..pos + 3])?;
+                    out.write_all(&dna_sequence[pos..pos + 3])?;
                     pos += 3;
                 }
             }
