@@ -35,13 +35,17 @@ fn kimura(s1: &[u8], s2: &[u8]) -> f64 {
             }
         }
     };
-    let d = 1. - matches as f64 / scored as f64;
-    if d < 0.75 {
-        -(1. - d - 0.2 * d * d).ln()
-    } else if d > 0.930 {
-        10.
+    if scored > 0 {
+        let d = 1. - matches as f64 / scored as f64;
+        if d < 0.75 {
+            -(1. - d - 0.2 * d * d).ln()
+        } else if d > 0.930 {
+            10.
+        } else {
+            dayhoff_pams[(d * 1000. - 750. + 0.5) as usize] as f64 / 100.0
+        }
     } else {
-        dayhoff_pams[(d * 1000. - 750. + 0.5) as usize] as f64 / 100.0
+        f64::INFINITY
     }
 }
 
@@ -129,7 +133,11 @@ unsafe fn levenshtein_avx2(s1: &[u8], s2: &[u8]) -> f64 {
         scored += SIMD_WIDTH - _mm256_movemask_epi8(both_dashes).count_ones() as usize;
     }
 
-    1.0 - matches as f64 / scored as f64
+    if scored > 0 {
+        1.0 - matches as f64 / scored as f64
+    } else {
+        f64::INFINITY
+    }
 }
 
 fn levenshtein_x86(s1: &[u8], s2: &[u8]) -> f64 {
@@ -140,7 +148,11 @@ fn levenshtein_x86(s1: &[u8], s2: &[u8]) -> f64 {
         .fold((0, 0), |(matches, scored), (n1, n2)| {
             (matches + if n1 == n2 { 1 } else { 0 }, scored + 1)
         });
-    1.0 - matches as f64 / scored as f64
+    if scored > 0 {
+        1.0 - matches as f64 / scored as f64
+    } else {
+        f64::INFINITY
+    }
 }
 
 pub fn distance<T: Read>(fasta: FastaReader<T>, distance: Distance) -> (Vec<String>, Vec<f64>) {
