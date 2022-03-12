@@ -1,7 +1,6 @@
 use crate::fasta::*;
-use color_eyre::eyre::{Result, WrapErr};
 use std::arch::x86_64::*;
-use std::io::{BufWriter, Read, Write};
+use std::io::Read;
 
 pub enum Distance {
     Levenshtein,
@@ -55,27 +54,6 @@ fn kimura_x86(s1: &[u8], s2: &[u8]) -> (usize, usize) {
         })
 }
 
-unsafe fn print_mm256(a: __m256i) {
-    let mut o = vec![b'_'; 32];
-    _mm256_store_si256(o.as_mut_ptr() as *mut __m256i, a);
-    println!("{}", std::str::from_utf8(&o).unwrap());
-}
-
-unsafe fn print_bool256(a: __m256i) {
-    let mut o = vec![b'_'; 32];
-    _mm256_store_si256(o.as_mut_ptr() as *mut __m256i, a);
-    o.iter_mut().for_each(|b| {
-        if *b == 0xff {
-            *b = b'.'
-        }
-        if *b == 0x0 {
-            *b = b' '
-        }
-    });
-    println!("{}", std::str::from_utf8(&o).unwrap());
-}
-
-
 #[target_feature(enable = "avx2")]
 unsafe fn kimura_avx2(s1: &[u8], s2: &[u8]) -> (usize, usize) {
     const SIMD_WIDTH: usize = 32;
@@ -109,14 +87,14 @@ unsafe fn kimura_avx2(s1: &[u8], s2: &[u8]) -> (usize, usize) {
 }
 
 fn levenshtein(s1: &[u8], s2: &[u8]) -> f64 {
-        #[cfg(target_feature = "avx2")]
-        unsafe {
-            levenshtein_avx2(s1, s2)
-        }
-        #[cfg(not(target_feature = "avx2"))]
-        {
-            levenshtein_x86(s1, s2)
-        }
+    #[cfg(target_feature = "avx2")]
+    unsafe {
+        levenshtein_avx2(s1, s2)
+    }
+    #[cfg(not(target_feature = "avx2"))]
+    {
+        levenshtein_x86(s1, s2)
+    }
 }
 
 #[target_feature(enable = "avx2")]
@@ -148,7 +126,7 @@ unsafe fn levenshtein_avx2(s1: &[u8], s2: &[u8]) -> f64 {
         scored += SIMD_WIDTH - _mm256_movemask_epi8(both_dashes).count_ones() as usize;
     }
 
-    1.0 - matches as f64/scored as f64
+    1.0 - matches as f64 / scored as f64
 }
 
 fn levenshtein_x86(s1: &[u8], s2: &[u8]) -> f64 {

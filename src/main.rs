@@ -1,6 +1,6 @@
-use clap::app_from_crate;
+use clap::command;
 use clap::*;
-use color_eyre::eyre::{Result, WrapErr};
+use color_eyre::eyre::Result;
 use log::*;
 use simplelog::*;
 use std::fs::File;
@@ -9,6 +9,7 @@ use std::io::BufWriter;
 mod distance;
 mod fasta;
 mod io;
+mod simd;
 mod transformation;
 
 fn main() -> Result<()> {
@@ -22,12 +23,11 @@ fn main() -> Result<()> {
         simplelog::ColorChoice::Auto,
     )?;
 
-    let main_args = app_from_crate!()
-        .global_setting(AppSettings::PropagateVersion)
-        .global_setting(AppSettings::UseLongFormatForHelpSubcommand)
-        .setting(AppSettings::SubcommandRequiredElseHelp)
+    let main_args = command!()
+        .propagate_version(true)
+        .subcommand_required(true)
         .subcommand(
-            App::new("trans")
+            Command::new("trans")
                 .about("Convert a DNA FASTA file to a protein FASTA file")
                 .arg(
                     Arg::new("DNA_FILE")
@@ -38,7 +38,7 @@ fn main() -> Result<()> {
                 .arg(Arg::new("OUT_FILE").long("to").takes_value(true)),
         )
         .subcommand(
-            App::new("backtrans")
+            Command::new("backtrans")
                 .about("Convert a protein FASTA file to a DNA FASTA file")
                 .arg(
                     Arg::new("PROTEIN_FILE")
@@ -55,7 +55,7 @@ fn main() -> Result<()> {
                 .arg(Arg::new("OUT_FILE").long("to").takes_value(true)),
         )
         .subcommand(
-            App::new("distance")
+            Command::new("distance")
                 .about("Compute various distances on FASTA alignments")
                 .arg(
                     Arg::new("METRIC")
