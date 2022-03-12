@@ -68,6 +68,13 @@ fn main() -> Result<()> {
         )
         .get_matches();
 
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    {
+        if is_x86_feature_detected!("avx2") {
+            eprintln!("Using AVX2 acceleration");
+        }
+    }
+
     match main_args.subcommand() {
         Some(("trans", args)) => {
             let stdout = std::io::stdout();

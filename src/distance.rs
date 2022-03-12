@@ -26,13 +26,13 @@ fn kimura(s1: &[u8], s2: &[u8]) -> f64 {
         988, /* 93.0% observed; 988 PAMs */
     ];
     let (matches, scored) = {
-        #[cfg(target_feature = "avx2")]
-        unsafe {
-            kimura_avx2(s1, s2)
-        }
-        #[cfg(not(target_feature = "avx2"))]
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         {
-            kimura_x86(s1, s2)
+            if is_x86_feature_detected!("avx2") {
+                unsafe { kimura_avx2(s1, s2) }
+            } else {
+                kimura_x86(s1, s2)
+            }
         }
     };
     let d = 1. - matches as f64 / scored as f64;
@@ -54,6 +54,7 @@ fn kimura_x86(s1: &[u8], s2: &[u8]) -> (usize, usize) {
         })
 }
 
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 #[target_feature(enable = "avx2")]
 unsafe fn kimura_avx2(s1: &[u8], s2: &[u8]) -> (usize, usize) {
     const SIMD_WIDTH: usize = 32;
@@ -87,16 +88,18 @@ unsafe fn kimura_avx2(s1: &[u8], s2: &[u8]) -> (usize, usize) {
 }
 
 fn levenshtein(s1: &[u8], s2: &[u8]) -> f64 {
-    #[cfg(target_feature = "avx2")]
-    unsafe {
-        levenshtein_avx2(s1, s2)
-    }
-    #[cfg(not(target_feature = "avx2"))]
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     {
-        levenshtein_x86(s1, s2)
+        if is_x86_feature_detected!("avx2") {
+            unsafe { levenshtein_avx2(s1, s2) }
+        } else {
+            println!("Not using AVX2");
+            levenshtein_x86(s1, s2)
+        }
     }
 }
 
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 #[target_feature(enable = "avx2")]
 unsafe fn levenshtein_avx2(s1: &[u8], s2: &[u8]) -> f64 {
     const SIMD_WIDTH: usize = 32;
