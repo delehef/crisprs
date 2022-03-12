@@ -2,7 +2,6 @@ use clap::command;
 use clap::*;
 use color_eyre::eyre::Result;
 use log::*;
-use simplelog::*;
 use std::fs::File;
 use std::io::BufWriter;
 
@@ -14,18 +13,18 @@ mod transformation;
 
 fn main() -> Result<()> {
     color_eyre::install()?;
-    TermLogger::init(
-        LevelFilter::Info,
-        ConfigBuilder::new()
-            .set_time_level(LevelFilter::Off)
-            .build(),
-        TerminalMode::Stderr,
-        simplelog::ColorChoice::Auto,
-    )?;
 
     let main_args = command!()
         .propagate_version(true)
         .subcommand_required(true)
+        .arg(
+            Arg::new("verbose")
+                .short('v')
+                .long("verbose")
+                .takes_value(false)
+                .multiple_occurrences(true)
+                .help("verbosity level (-v, -vv, -vvv)"),
+        )
         .subcommand(
             Command::new("trans")
                 .about("Convert a DNA FASTA file to a protein FASTA file")
@@ -68,11 +67,15 @@ fn main() -> Result<()> {
         )
         .get_matches();
 
+    stderrlog::new()
+        .timestamp(stderrlog::Timestamp::Off)
+        .verbosity(main_args.occurrences_of("verbose") as usize)
+        .init()
+        .unwrap();
+
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    {
-        if is_x86_feature_detected!("avx2") {
-            eprintln!("Using AVX2 acceleration");
-        }
+    if is_x86_feature_detected!("avx2") {
+        info!("Using AVX2 acceleration");
     }
 
     match main_args.subcommand() {
