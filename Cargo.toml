@@ -14,3 +14,4 @@ smartstring = "0.2"
 clap = {version = "3.0", features = ["color", "cargo"]}
 log = "0.4"
 stderrlog = "0.5"
+rayon = "1.5"

@@ -25,6 +25,15 @@ fn main() -> Result<()> {
                 .multiple_occurrences(true)
                 .help("verbosity level (-v, -vv, -vvv)"),
         )
+        .arg(
+            Arg::new("parallel")
+                .short('P')
+                .long("parallel")
+                .takes_value(true)
+                .default_missing_value("0")
+                .require_equals(true)
+                .min_values(0)
+        )
         .subcommand(
             Command::new("trans")
                 .about("Convert a DNA FASTA file to a protein FASTA file")
@@ -72,6 +81,19 @@ fn main() -> Result<()> {
         .verbosity(main_args.occurrences_of("verbose") as usize)
         .init()
         .unwrap();
+
+    if main_args.is_present("parallel") {
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(main_args.value_of_t("parallel").unwrap())
+            .build_global()
+            .unwrap();
+    } else {
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(1)
+            .build_global()
+            .unwrap();
+    }
+    info!("Using {} threads", rayon::current_num_threads());
 
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     if is_x86_feature_detected!("avx2") {

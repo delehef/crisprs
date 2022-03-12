@@ -1,7 +1,8 @@
 use crate::fasta::*;
-use log::*;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::arch::x86_64::*;
 use std::io::Read;
+use std::sync::Mutex;
 
 pub enum Distance {
     Levenshtein,
@@ -161,23 +162,24 @@ pub fn distance<T: Read>(fasta: FastaReader<T>, distance: Distance) -> (Vec<Stri
         .map(|f| (f.id.clone(), f.seq.unwrap()))
         .collect::<Vec<_>>();
     let n = fragments.len();
-    let mut r = vec![0f64; n * n];
+    let r = Mutex::new(vec![0f64; n * n]);
 
-    for i in 0..fragments.len() {
+    (0..fragments.len()).into_par_iter().for_each(|i| {
         for j in (i + 1)..fragments.len() {
             let d = match distance {
                 Distance::Kimura => kimura(&fragments[i].1, &fragments[j].1),
                 Distance::Levenshtein => levenshtein(&fragments[i].1, &fragments[j].1),
             };
-            r[i * n + j] = d;
-            r[j * n + i] = d;
+            r.lock().unwrap()[i * n + j] = d;
+            r.lock().unwrap()[j * n + i] = d;
         }
-    }
+    });
+
     (
         fragments
             .into_iter()
             .map(|f| f.0.to_string())
             .collect::<Vec<_>>(),
-        r,
+        r.into_inner().unwrap(),
     )
 }
