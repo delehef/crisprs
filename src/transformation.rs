@@ -30,13 +30,22 @@ pub fn trans<'a>(
         File::open(dna_filename).wrap_err(format!("while opening {}", dna_filename))?,
         true,
     ) {
+        let ignore_non_triple = true;
         let seq = fragment.seq.unwrap();
         if seq.len() % 3 != 0 {
-            return Err(eyre::eyre!(format!(
-                "Length of '{}' ({}bp) is not a multiple of 3",
-                fragment.id,
-                seq.len()
-            )));
+            if ignore_non_triple {
+                warn!(
+                    "Length of '{}' ({}bp) is not a multiple of 3",
+                    fragment.id,
+                    seq.len()
+                );
+            } else {
+                return Err(eyre::eyre!(format!(
+                    "Length of '{}' ({}bp) is not a multiple of 3",
+                    fragment.id,
+                    seq.len()
+                )));
+            }
         }
 
         writeln!(
@@ -47,7 +56,7 @@ pub fn trans<'a>(
         )?;
 
         let mut i = 0;
-        for nnn in seq.as_slice().chunks(3) {
+        for nnn in seq.as_slice().chunks_exact(3) {
             let nnn = std::str::from_utf8(nnn).wrap_err(format!("invalid UTF-8: {:?}", nnn))?;
             let aa = PROT_DICT.get(&nnn).unwrap_or_else(|| {
                 warn!("unknown triplet: {}", nnn);
