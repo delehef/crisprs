@@ -1,5 +1,5 @@
 use crate::fasta::*;
-use color_eyre::eyre::{Result, WrapErr};
+use eyre::{Result, WrapErr};
 use log::*;
 use std::collections::HashMap;
 use std::fs::File;

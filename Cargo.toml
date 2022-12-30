@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 clap = {version = "3.0", features = ["color", "cargo"]}
-color-eyre = { version = "0.6", default-features = false }
 eyre = "0.6"
 lazy_static= "1.4"
 log = "0.4"

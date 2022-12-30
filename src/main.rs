@@ -1,6 +1,6 @@
 use clap::command;
 use clap::*;
-use color_eyre::eyre::Result;
+use eyre::Result;
 use log::*;
 use std::fs::File;
 use std::io::BufWriter;
@@ -13,8 +13,6 @@ mod simd;
 mod transformation;
 
 fn main() -> Result<()> {
-    color_eyre::install()?;
-
     let main_args = command!()
         .propagate_version(true)
         .subcommand_required(true)

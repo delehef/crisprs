@@ -1,5 +1,5 @@
 use crate::fasta;
-use color_eyre::eyre::{Result, WrapErr};
+use eyre::{Result, WrapErr};
 use std::fs::File;
 use std::io::{BufWriter, Write};
 
