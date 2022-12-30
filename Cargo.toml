@@ -14,7 +14,7 @@ log = "0.4"
 maplit = "1.0"
 rayon = "1.5"
 smartstring = "1"
-stderrlog = "0.5"
+stderrlog = "0.4"
 
 [package.metadata.release]
 tag-prefix = ""
