@@ -8,6 +8,7 @@ use std::io::BufWriter;
 mod distance;
 mod fasta;
 mod io;
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod simd;
 mod transformation;
 
@@ -32,7 +33,7 @@ fn main() -> Result<()> {
                 .takes_value(true)
                 .default_missing_value("0")
                 .require_equals(true)
-                .min_values(0)
+                .min_values(0),
         )
         .subcommand(
             Command::new("trans")

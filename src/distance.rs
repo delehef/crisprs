@@ -1,5 +1,6 @@
 use crate::fasta::*;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 use std::arch::x86_64::*;
 use std::io::Read;
 use std::sync::Mutex;
@@ -33,9 +34,11 @@ fn kimura(s1: &[u8], s2: &[u8]) -> f64 {
             if is_x86_feature_detected!("avx2") {
                 unsafe { kimura_avx2(s1, s2) }
             } else {
-                kimura_x86(s1, s2)
+                kimura_cpu(s1, s2)
             }
         }
+        #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+        kimura_cpu(s1, s2)
     };
     if scored > 0 {
         let d = 1. - matches as f64 / scored as f64;
@@ -51,7 +54,7 @@ fn kimura(s1: &[u8], s2: &[u8]) -> f64 {
     }
 }
 
-fn kimura_x86(s1: &[u8], s2: &[u8]) -> (usize, usize) {
+fn kimura_cpu(s1: &[u8], s2: &[u8]) -> (usize, usize) {
     s1.iter()
         .zip(s2.iter())
         .filter(|(&n1, &n2)| n1 != b'-' && n2 != b'-') // Kimura: gaps are ignored
@@ -100,9 +103,11 @@ fn levenshtein(s1: &[u8], s2: &[u8]) -> f64 {
             unsafe { levenshtein_avx2(s1, s2) }
         } else {
             println!("Not using AVX2");
-            levenshtein_x86(s1, s2)
+            levenshtein_cpu(s1, s2)
         }
     }
+    #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+    levenshtein_cpu(s1, s2)
 }
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -142,7 +147,7 @@ unsafe fn levenshtein_avx2(s1: &[u8], s2: &[u8]) -> f64 {
     }
 }
 
-fn levenshtein_x86(s1: &[u8], s2: &[u8]) -> f64 {
+fn levenshtein_cpu(s1: &[u8], s2: &[u8]) -> f64 {
     let (matches, scored) = s1
         .iter()
         .zip(s2.iter())
