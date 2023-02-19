@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.2] - 2023-02-19
+
+### Miscellaneous Tasks
+
+- Update dependencies
+
 ## [1.1.1] - 2023-02-19
 
 ### Miscellaneous Tasks
 
 - Stderrlog -> buche
+- Release crisprs version 1.1.1
 
 ## [1.1.0] - 2023-02-19
 
