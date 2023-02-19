@@ -5,14 +5,14 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 
-const PER_LINE: usize = 20;
+const PER_LINE: usize = 50;
 lazy_static::lazy_static! {
     static ref PROT_DICT: HashMap<&'static str, u8> = maplit::hashmap! {
         "ATA" => b'I', "ATC" => b'I', "ATT" => b'I', "ATG" => b'M', "ACA" => b'T', "ACC" => b'T', "ACG" => b'T', "ACT" => b'T', "AAC" => b'N', "AAT" => b'N', "AAA" => b'K', "AAG" => b'K', "AGC" => b'S', "AGT" => b'S', "AGA" => b'R', "AGG" => b'R',
         "CTA" => b'L', "CTC" => b'L', "CTG" => b'L', "CTT" => b'L', "CCA" => b'P', "CCC" => b'P', "CCG" => b'P', "CCT" => b'P', "CAC" => b'H', "CAT" => b'H', "CAA" => b'Q', "CAG" => b'Q', "CGA" => b'R', "CGC" => b'R', "CGG" => b'R', "CGT" => b'R',
         "GTA" => b'V', "GTC" => b'V', "GTG" => b'V', "GTT" => b'V', "GCA" => b'A', "GCC" => b'A', "GCG" => b'A', "GCT" => b'A', "GAC" => b'D', "GAT" => b'D', "GAA" => b'E', "GAG" => b'E', "GGA" => b'G', "GGC" => b'G', "GGG" => b'G', "GGT" => b'G',
         "TCA" => b'S', "TCC" => b'S', "TCG" => b'S', "TCT" => b'S', "TTC" => b'F', "TTT" => b'F', "TTA" => b'L', "TTG" => b'L', "TAC" => b'Y', "TAT" => b'Y',                               "TGC" => b'C', "TGT" => b'C',                "TGG" => b'W',
-        "NNN" => b'X',
+        "NNN" => b'X', "---" => b'-',
 
         "ata" => b'i', "atc" => b'i', "att" => b'i', "atg" => b'm', "aca" => b't', "acc" => b't', "acg" => b't', "act" => b't', "aac" => b'n', "aat" => b'n', "aaa" => b'k', "aag" => b'k', "agc" => b's', "agt" => b's', "aga" => b'r', "agg" => b'r',
         "cta" => b'l', "ctc" => b'l', "ctg" => b'l', "ctt" => b'l', "cca" => b'p', "ccc" => b'p', "ccg" => b'p', "cct" => b'p', "cac" => b'h', "cat" => b'h', "caa" => b'q', "cag" => b'q', "cga" => b'r', "cgc" => b'r', "cgg" => b'r', "cgt" => b'r',
