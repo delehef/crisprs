@@ -21,4 +21,3 @@ tag-prefix = ""
 publish = false
 pre-release-hook = ["git-cliff", "-o", "CHANGELOG.md", "--tag", "{{version}}"]
 allow-branch = ["master"]
-aa_similarity = "0.1.0"
