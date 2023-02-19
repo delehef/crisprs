@@ -1,7 +1,6 @@
 use crate::fasta;
 use eyre::{Result, WrapErr};
 use std::fs::File;
-use std::io::{BufWriter, Write};
 
 pub fn open_fasta(filename: &str) -> Result<fasta::FastaReader<File>> {
     Ok(fasta::FastaReader::new(
