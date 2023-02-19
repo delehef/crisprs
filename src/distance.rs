@@ -1,4 +1,5 @@
 use crate::fasta::*;
+use aa_similarity::{AminoAcid, Blosum62, Similarity};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 use std::arch::x86_64::*;
@@ -8,6 +9,7 @@ use std::sync::Mutex;
 pub enum Distance {
     Levenshtein,
     Kimura,
+    ScoreDist,
 }
 
 fn kimura(s1: &[u8], s2: &[u8]) -> f32 {
@@ -61,6 +63,63 @@ fn kimura_cpu(s1: &[u8], s2: &[u8]) -> (usize, usize) {
         .fold((0, 0), |(matches, scored), (n1, n2)| {
             (matches + if n1 == n2 { 1 } else { 0 }, scored + 1)
         })
+}
+
+// from https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-6-108
+fn scoredist(s1: &[u8], s2: &[u8]) -> f32 {
+    fn sigma(s1: &[u8], s2: &[u8]) -> i16 {
+        s1.iter()
+            .zip(s2.iter())
+            .filter(|(&n1, &n2)| n1 != b'-' && n2 != b'-' && n1 != b'X' && n2 != b'X') // gaps are ignored
+            .fold(0, |score, (n1, n2)| {
+                score
+                    + Blosum62::similarity(
+                        AminoAcid::try_from(*n1 as char).unwrap(),
+                        AminoAcid::try_from(*n2 as char).unwrap(),
+                    )
+            })
+    }
+
+    assert!(s1.len() == s2.len());
+    let l = s1.len() as f32;
+    let all_aas = [
+        AminoAcid::Alanine,
+        AminoAcid::Arginine,
+        AminoAcid::Asparagine,
+        AminoAcid::AsparticAcid,
+        AminoAcid::Cysteine,
+        AminoAcid::GlutamicAcid,
+        AminoAcid::Glutamine,
+        AminoAcid::Glycine,
+        AminoAcid::Histidine,
+        AminoAcid::Isoleucine,
+        AminoAcid::Leucine,
+        AminoAcid::Lysine,
+        AminoAcid::Methionine,
+        AminoAcid::Phenylalanine,
+        AminoAcid::Proline,
+        AminoAcid::Serine,
+        AminoAcid::Threonine,
+        AminoAcid::Tryptophan,
+        AminoAcid::Tyrosine,
+        AminoAcid::Valine,
+    ];
+
+    let sigma_r: f32 = {
+        let mut s = 0f32;
+        for i in 0..all_aas.len() {
+            for j in 0..=i {
+                s += Blosum62::similarity(all_aas[i].clone(), all_aas[j].clone()) as f32;
+            }
+        }
+        s / (all_aas.len().pow(2) as f32)
+    } * l;
+
+    let sigma_s1_s2 = sigma(s1, s2) as f32;
+    let sigma_n: f32 = sigma_s1_s2 - sigma_r;
+    let sigma_un: f32 = (sigma(s1, s1) as f32 + sigma(s2, s2) as f32) / 2.0 - sigma_r;
+
+    -(sigma_n / sigma_un).ln()
 }
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -173,6 +232,7 @@ pub fn distance<T: Read>(fasta: FastaReader<T>, distance: Distance) -> (Vec<Stri
         for j in (i + 1)..fragments.len() {
             let d = match distance {
                 Distance::Kimura => kimura(&fragments[i].1, &fragments[j].1),
+                Distance::ScoreDist => scoredist(&fragments[i].1, &fragments[j].1),
                 Distance::Levenshtein => levenshtein(&fragments[i].1, &fragments[j].1),
             };
             r.lock().unwrap()[i * n + j] = d;

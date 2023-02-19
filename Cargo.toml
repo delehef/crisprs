@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+aa_similarity = "0.1.0"
 clap = {version = "3.0", features = ["color", "cargo"]}
 eyre = "0.6"
 lazy_static= "1.4"
@@ -20,3 +21,4 @@ tag-prefix = ""
 publish = false
 pre-release-hook = ["git-cliff", "-o", "CHANGELOG.md", "--tag", "{{version}}"]
 allow-branch = ["master"]
+aa_similarity = "0.1.0"

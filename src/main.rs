@@ -68,7 +68,7 @@ fn main() -> Result<()> {
                     Arg::new("METRIC")
                         .takes_value(true)
                         .required(true)
-                        .possible_values(["kimura", "levenshtein"]),
+                        .possible_values(["kimura", "scoredist", "levenshtein"]),
                 )
                 .arg(Arg::new("FASTA_FILE").takes_value(true).required(true))
                 .arg(Arg::new("OUT_FILE").long("to").takes_value(true)),
@@ -137,6 +137,7 @@ fn main() -> Result<()> {
 
             let distance = match args.value_of("METRIC").unwrap() {
                 "kimura" => distance::Distance::Kimura,
+                "scoredist" => distance::Distance::ScoreDist,
                 "levenshtein" => distance::Distance::Levenshtein,
                 _ => unreachable!(),
             };
