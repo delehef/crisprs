@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2023-02-19
+
+### Miscellaneous Tasks
+
+- Stderrlog -> buche
+
 ## [1.1.0] - 2023-02-19
 
 ### Bug Fixes
@@ -26,6 +32,7 @@ All notable changes to this project will be documented in this file.
 - Add shell.nix
 - Dead code
 - Gitignore
+- Release crisprs version 1.1.0
 
 ### Refactor
 
