@@ -75,8 +75,8 @@ fn main() -> Result<()> {
         )
         .get_matches();
 
-    stderrlog::new()
-        .timestamp(stderrlog::Timestamp::Off)
+    buche::new()
+        .timestamp(buche::Timestamp::Off)
         .verbosity(main_args.occurrences_of("verbose") as usize)
         .init()
         .unwrap();

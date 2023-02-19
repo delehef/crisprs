@@ -13,8 +13,8 @@ lazy_static= "1.4"
 log = "0.4"
 maplit = "1.0"
 rayon = "1.5"
-smartstring = "0.2"
-stderrlog = "0.4"
+smartstring = "1.0.1"
+buche = "0.7"
 
 [package.metadata.release]
 tag-prefix = ""
