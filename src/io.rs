@@ -10,10 +10,10 @@ pub fn open_fasta(filename: &str) -> Result<fasta::FastaReader<File>> {
     ))
 }
 
-pub fn write_dist_matrix<'a, T: std::fmt::Display, L: std::fmt::Display>(
+pub fn write_dist_matrix<T: std::fmt::Display, L: std::fmt::Display>(
     m: &[T],
     ids: &[L],
-    mut out: BufWriter<Box<dyn std::io::Write + 'a>>,
+    mut out: impl std::io::Write,
 ) -> Result<()> {
     let n = ids.len();
     assert!(m.len() == n * n);
