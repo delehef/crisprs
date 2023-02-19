@@ -10,7 +10,7 @@ pub enum Distance {
     Kimura,
 }
 
-fn kimura(s1: &[u8], s2: &[u8]) -> f64 {
+fn kimura(s1: &[u8], s2: &[u8]) -> f32 {
     let dayhoff_pams = vec![
         195, /* 75.0% observed d; 195 PAMs estimated = 195% estimated d */
         196, /* 75.1% observed d; 196 PAMs estimated */
@@ -41,16 +41,16 @@ fn kimura(s1: &[u8], s2: &[u8]) -> f64 {
         kimura_cpu(s1, s2)
     };
     if scored > 0 {
-        let d = 1. - matches as f64 / scored as f64;
+        let d = 1. - matches as f32 / scored as f32;
         if d < 0.75 {
             -(1. - d - 0.2 * d * d).ln()
         } else if d > 0.930 {
             10.
         } else {
-            dayhoff_pams[(d * 1000. - 750. + 0.5) as usize] as f64 / 100.0
+            dayhoff_pams[(d * 1000. - 750. + 0.5) as usize] as f32 / 100.0
         }
     } else {
-        f64::INFINITY
+        f32::INFINITY
     }
 }
 
@@ -96,7 +96,7 @@ unsafe fn kimura_avx2(s1: &[u8], s2: &[u8]) -> (usize, usize) {
     (matches.try_into().unwrap(), scored)
 }
 
-fn levenshtein(s1: &[u8], s2: &[u8]) -> f64 {
+fn levenshtein(s1: &[u8], s2: &[u8]) -> f32 {
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     {
         if is_x86_feature_detected!("avx2") {
@@ -112,7 +112,7 @@ fn levenshtein(s1: &[u8], s2: &[u8]) -> f64 {
 
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 #[target_feature(enable = "avx2")]
-unsafe fn levenshtein_avx2(s1: &[u8], s2: &[u8]) -> f64 {
+unsafe fn levenshtein_avx2(s1: &[u8], s2: &[u8]) -> f32 {
     const SIMD_WIDTH: usize = 32;
     let n = s1.len();
     let lasts = n % SIMD_WIDTH;
@@ -141,13 +141,13 @@ unsafe fn levenshtein_avx2(s1: &[u8], s2: &[u8]) -> f64 {
     }
 
     if scored > 0 {
-        1.0 - matches as f64 / scored as f64
+        1.0 - matches as f32 / scored as f32
     } else {
-        f64::INFINITY
+        f32::INFINITY
     }
 }
 
-fn levenshtein_cpu(s1: &[u8], s2: &[u8]) -> f64 {
+fn levenshtein_cpu(s1: &[u8], s2: &[u8]) -> f32 {
     let (matches, scored) = s1
         .iter()
         .zip(s2.iter())
@@ -156,18 +156,18 @@ fn levenshtein_cpu(s1: &[u8], s2: &[u8]) -> f64 {
             (matches + if n1 == n2 { 1 } else { 0 }, scored + 1)
         });
     if scored > 0 {
-        1.0 - matches as f64 / scored as f64
+        1.0 - matches as f32 / scored as f32
     } else {
-        f64::INFINITY
+        f32::INFINITY
     }
 }
 
-pub fn distance<T: Read>(fasta: FastaReader<T>, distance: Distance) -> (Vec<String>, Vec<f64>) {
+pub fn distance<T: Read>(fasta: FastaReader<T>, distance: Distance) -> (Vec<String>, Vec<f32>) {
     let fragments = fasta
         .map(|f| (f.id.clone(), f.seq.unwrap()))
         .collect::<Vec<_>>();
     let n = fragments.len();
-    let r = Mutex::new(vec![0f64; n * n]);
+    let r = Mutex::new(vec![0f32; n * n]);
 
     (0..fragments.len()).into_par_iter().for_each(|i| {
         for j in (i + 1)..fragments.len() {
