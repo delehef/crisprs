@@ -70,6 +70,15 @@ fn main() -> Result<()> {
                         .required(true)
                         .possible_values(["kimura", "scoredist", "levenshtein"]),
                 )
+                .arg(
+                    Arg::new("mode")
+                        .help("whether the FASTA represents an MSA or a succession of pairwise alignments")
+                        .takes_value(true)
+                        .short('M')
+                        .long("mode")
+                        .value_parser(["msa", "pairwise"])
+                        .default_value("msa"),
+                )
                 .arg(Arg::new("FASTA_FILE").takes_value(true).required(true))
                 .arg(Arg::new("OUT_FILE").long("to").takes_value(true)),
         )
@@ -144,6 +153,11 @@ fn main() -> Result<()> {
             let (ids, m) = distance::distance(
                 io::open_fasta(args.value_of("FASTA_FILE").unwrap())?,
                 distance,
+                match args.value_of("mode").unwrap() {
+                    "msa" => distance::FastaMode::Msa,
+                    "pairwise" => distance::FastaMode::Pairwise,
+                    _ => unreachable!(),
+                },
             );
             io::write_dist_matrix(&m, &ids, out)
         }

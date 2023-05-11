@@ -1,9 +1,11 @@
 use crate::fasta::*;
 use aa_similarity::{AminoAcid, Blosum62, Similarity};
 use once_cell::sync::OnceCell;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use rayon::prelude::*;
+use smartstring::{LazyCompact, SmartString};
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 use std::arch::x86_64::*;
+use std::collections::HashMap;
 use std::io::Read;
 use std::sync::Mutex;
 
@@ -36,6 +38,12 @@ pub enum Distance {
     Levenshtein,
     Kimura,
     ScoreDist,
+}
+
+#[derive(Clone, Copy)]
+pub enum FastaMode {
+    Msa,      // the fasta file contains a global alignment, each sequence appearing only once
+    Pairwise, // the fasta file is a succession of pairwise alignment (e.g. from needleall)
 }
 
 fn kimura(s1: &[u8], s2: &[u8]) -> f32 {
@@ -224,30 +232,71 @@ fn levenshtein_cpu(s1: &[u8], s2: &[u8]) -> f32 {
     }
 }
 
-pub fn distance<T: Read>(fasta: FastaReader<T>, distance: Distance) -> (Vec<String>, Vec<f32>) {
+pub fn distance<T: Read>(
+    fasta: FastaReader<T>,
+    distance: Distance,
+    mode: FastaMode,
+) -> (Vec<String>, Vec<f32>) {
     let fragments = fasta
         .map(|f| (f.id.clone(), f.seq.unwrap()))
         .collect::<Vec<_>>();
-    let n = fragments.len();
-    let r = Mutex::new(vec![0f32; n * n]);
 
-    (0..fragments.len()).into_par_iter().for_each(|i| {
-        for j in (i + 1)..fragments.len() {
-            let d = match distance {
-                Distance::Kimura => kimura(&fragments[i].1, &fragments[j].1),
-                Distance::ScoreDist => scoredist(&fragments[i].1, &fragments[j].1),
-                Distance::Levenshtein => levenshtein(&fragments[i].1, &fragments[j].1),
-            };
-            r.lock().unwrap()[i * n + j] = d;
-            r.lock().unwrap()[j * n + i] = d;
+    match mode {
+        FastaMode::Msa => {
+            let n = fragments.len();
+            let r = Mutex::new(vec![0f32; n * n]);
+
+            (0..fragments.len()).into_par_iter().for_each(|i| {
+                for j in (i + 1)..fragments.len() {
+                    let d = match distance {
+                        Distance::Kimura => kimura(&fragments[i].1, &fragments[j].1),
+                        Distance::ScoreDist => scoredist(&fragments[i].1, &fragments[j].1),
+                        Distance::Levenshtein => levenshtein(&fragments[i].1, &fragments[j].1),
+                    };
+                    r.lock().unwrap()[i * n + j] = d;
+                    r.lock().unwrap()[j * n + i] = d;
+                }
+            });
+
+            (
+                fragments
+                    .into_iter()
+                    .map(|f| f.0.to_string())
+                    .collect::<Vec<_>>(),
+                r.into_inner().unwrap(),
+            )
         }
-    });
+        FastaMode::Pairwise => {
+            let r = Mutex::new(HashMap::<
+                SmartString<LazyCompact>,
+                HashMap<SmartString<LazyCompact>, f32>,
+            >::new());
 
-    (
-        fragments
-            .into_iter()
-            .map(|f| f.0.to_string())
-            .collect::<Vec<_>>(),
-        r.into_inner().unwrap(),
-    )
+            fragments.par_iter().chunks(2).for_each(|f| {
+                let d = match distance {
+                    Distance::Kimura => kimura(&f[0].1, &f[1].1),
+                    Distance::ScoreDist => scoredist(&f[0].1, &f[1].1),
+                    Distance::Levenshtein => levenshtein(&f[0].1, &f[1].1),
+                };
+                r.lock()
+                    .unwrap()
+                    .entry(f[0].0.clone())
+                    .or_default()
+                    .insert(f[1].0.clone(), d);
+            });
+
+            let r = r.into_inner().unwrap();
+            let ids = r.keys().cloned().collect::<Vec<_>>();
+            let n = ids.len();
+            let mut rr = vec![0f32; n * n];
+            for i in 0..n {
+                for j in (i + 1)..n {
+                    rr[i * n + j] = r[&ids[i]][&ids[j]];
+                    rr[j * n + i] = r[&ids[j]][&ids[i]];
+                }
+            }
+
+            (ids.into_iter().map(|s| s.to_string()).collect(), rr)
+        }
+    }
 }
