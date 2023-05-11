@@ -1,10 +1,36 @@
 use crate::fasta::*;
 use aa_similarity::{AminoAcid, Blosum62, Similarity};
+use once_cell::sync::OnceCell;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 use std::arch::x86_64::*;
 use std::io::Read;
 use std::sync::Mutex;
+
+const ALL_AAS: [AminoAcid; 20] = [
+    AminoAcid::Alanine,
+    AminoAcid::Arginine,
+    AminoAcid::Asparagine,
+    AminoAcid::AsparticAcid,
+    AminoAcid::Cysteine,
+    AminoAcid::GlutamicAcid,
+    AminoAcid::Glutamine,
+    AminoAcid::Glycine,
+    AminoAcid::Histidine,
+    AminoAcid::Isoleucine,
+    AminoAcid::Leucine,
+    AminoAcid::Lysine,
+    AminoAcid::Methionine,
+    AminoAcid::Phenylalanine,
+    AminoAcid::Proline,
+    AminoAcid::Serine,
+    AminoAcid::Threonine,
+    AminoAcid::Tryptophan,
+    AminoAcid::Tyrosine,
+    AminoAcid::Valine,
+];
+
+static SIGMA_R_BASE: OnceCell<f32> = OnceCell::new();
 
 pub enum Distance {
     Levenshtein,
@@ -82,38 +108,15 @@ fn scoredist(s1: &[u8], s2: &[u8]) -> f32 {
 
     assert!(s1.len() == s2.len());
     let l = s1.len() as f32;
-    let all_aas = [
-        AminoAcid::Alanine,
-        AminoAcid::Arginine,
-        AminoAcid::Asparagine,
-        AminoAcid::AsparticAcid,
-        AminoAcid::Cysteine,
-        AminoAcid::GlutamicAcid,
-        AminoAcid::Glutamine,
-        AminoAcid::Glycine,
-        AminoAcid::Histidine,
-        AminoAcid::Isoleucine,
-        AminoAcid::Leucine,
-        AminoAcid::Lysine,
-        AminoAcid::Methionine,
-        AminoAcid::Phenylalanine,
-        AminoAcid::Proline,
-        AminoAcid::Serine,
-        AminoAcid::Threonine,
-        AminoAcid::Tryptophan,
-        AminoAcid::Tyrosine,
-        AminoAcid::Valine,
-    ];
-
-    let sigma_r: f32 = {
+    let sigma_r: f32 = SIGMA_R_BASE.get_or_init(|| {
         let mut s = 0f32;
-        for i in 0..all_aas.len() {
+        for i in 0..ALL_AAS.len() {
             for j in 0..=i {
-                s += Blosum62::similarity(all_aas[i].clone(), all_aas[j].clone()) as f32;
+                s += Blosum62::similarity(ALL_AAS[i].clone(), ALL_AAS[j].clone()) as f32;
             }
         }
-        s / (all_aas.len().pow(2) as f32)
-    } * l;
+        s / (ALL_AAS.len().pow(2) as f32)
+    }) * l;
 
     let sigma_s1_s2 = sigma(s1, s2) as f32;
     let sigma_n: f32 = sigma_s1_s2 - sigma_r;

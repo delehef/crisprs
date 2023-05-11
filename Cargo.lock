@@ -169,6 +169,7 @@ dependencies = [
  "lazy_static",
  "log",
  "maplit",
+ "once_cell",
  "rayon",
  "smartstring",
 ]
